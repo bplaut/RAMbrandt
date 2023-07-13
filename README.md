@@ -1,2 +1,2 @@
 # art-generator
-An automated art generator based on floodfill and Markov chains
+An automated art generator based on vector calculus, floodfill, and Markov chains
