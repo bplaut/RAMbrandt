@@ -57,6 +57,7 @@ class Model(object):
 
         for image_path in self.palette_paths: # local path, not full path
             image = Image.open(image_path)
+            print(image_path)
             # want to resize so that dimension ratio is maintained, but the
             # number of pixels is now self.train_palette_size
             image = util.resize_intelligently(image, self.train_palette_size)
@@ -189,7 +190,7 @@ def set_parameters():
     - extra_args: need to pack whatever extra args you want in this tuple
     - palette_short_dir: the path from main.py to the directory containing
     the images you want to use for palette training
-    - pal_indices: the indices of which images inside palette_short_dir
+    - palette_files: the indices of which images inside palette_short_dir
     to keep
     """
       
@@ -206,15 +207,15 @@ def set_parameters():
     y_scale = 100
     shuffle_wts_func = lambda x,y: unformatted_func(x,y, width, height, x_scale, y_scale)
     extra_args = (shuffle_wts_func,)
-    pal_indices = [0]
+    palette_files = ['gradient4.jpg', 'gradient3.jpg']
     palette_short_dir = 'input/gradients'
-    palette_paths = util.get_input_paths(palette_short_dir, pal_indices)
+    palette_paths = util.get_input_paths(palette_short_dir, palette_files)
     # END PARAMETERS
 
     args = (train_region_size, train_region_func, train_palette_size,
             gen_region_size, mode, gen_pixel_limit, x_scale, y_scale, 
             shuffle_wts_func, extra_args, palette_paths, output_size)
-    stuff_for_file_naming = (pal_indices, palette_short_dir, unformatted_func)
+    stuff_for_file_naming = (palette_files, palette_short_dir, unformatted_func)
 
     return (args, stuff_for_file_naming)
 
@@ -223,7 +224,7 @@ def main():
     (train_region_size, train_region_func, train_palette_size, gen_region_size,
      mode, gen_pixel_limit, x_scale, y_scale, shuffle_wts_func, extra_args, 
      palette_paths, output_size) = args
-    (pal_indices, palette_short_dir, unformatted_func) = stuff_for_file_naming
+    (palette_files, palette_short_dir, unformatted_func) = stuff_for_file_naming
 
     # initialize canvas
     root = Tk()
@@ -236,7 +237,7 @@ def main():
     image = model.generate()
     output_name = util.make_output_name(
         unformatted_func, x_scale, y_scale, train_region_size, gen_region_size, 
-        train_palette_size, palette_short_dir, pal_indices)
+        train_palette_size, palette_files)
     image.save(output_name)
     tk_image = ImageTk.PhotoImage(image)
     canvas.create_image(0, 0, anchor = NW, image = tk_image)

@@ -139,25 +139,25 @@ def binary_image_from_set(white_pixels, width, height):
         result_pixels[x,y] = white_val
     return result
 
-def get_input_paths(image_short_dir, indices_to_keep):
+def get_input_paths(image_short_dir, filenames):
     image_dir = os.path.join(os.getcwd(), image_short_dir)
-    short_paths = os.listdir(image_dir)
-    image_paths = [os.path.join(image_dir, path) for path in short_paths]
-
-    image_paths = [image_paths[i] for i in range(len(image_paths))
-                   if i in indices_to_keep]
+    found_files = os.listdir(image_dir)
+    image_paths = []
+    for filename in filenames:
+        if filename in found_files:
+            image_paths.append(os.path.join(image_dir, filename))
+        else:
+            print("Could not find file \'%s\', skipping" % filename)
     return image_paths
 
 def sans_brackets(L):
     return str(L)[1:len(L) - 1]
 
 def make_output_name(unformatted_func, x_scale, y_scale, train_region_size, gen_region_size, 
-                     train_palette_size, palette_short_dir, pal_index):
-    j = palette_short_dir.find("/") + 1 # skip the /
-    palette_short_dir = palette_short_dir[j:]
-    return ('output/%s_x=%d_y=%d_train_size=%d_gen_region_size=%d_train_pal_size=%d_palette=%s%s.jpg' %
+                     train_palette_size, palette_files):
+    return ('output/%s_x=%d_y=%d_train_size=%d_gen_region_size=%d_train_pal_size=%d_palette_files=%s.jpg' %
             (get_func_string(unformatted_func), x_scale, y_scale, train_region_size, 
-             gen_region_size, train_palette_size, palette_short_dir, sans_brackets(pal_index)))
+             gen_region_size, train_palette_size, sans_brackets(palette_files)))
 
 def get_all_pixels(width, height):
     result = []
