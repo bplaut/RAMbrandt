@@ -66,8 +66,8 @@ class Model(object):
                 for y in range(new_height):
                     self.train_from_pixel(pixels, x, y, new_width, new_height)
                                           
-    def generate_from_one_neighbor(self, prev_x, prev_y, pixels):
-        (prev_r, prev_g, prev_b) = pixels[prev_x, prev_y]
+    def generate_from_one_neighbor(self, prev_x, prev_y):
+        (prev_r, prev_g, prev_b) = self.result_pixels[prev_x, prev_y]
         prev_r = util.closest_val_in_dict(self.red_model, prev_r)
         prev_g = util.closest_val_in_dict(self.green_model, prev_g)
         prev_b = util.closest_val_in_dict(self.blue_model, prev_b)
@@ -77,7 +77,7 @@ class Model(object):
         b = random.choice(self.blue_model[prev_b])
         return (r, g, b)
 
-    def generate_one_pixel(self, x, y, result_pixels, seen_pixels, region_func):
+    def generate_one_pixel(self, x, y, seen_pixels, region_func):
         adj_points = region_func(x, y, self.gen_region_size)
         (acc_r, acc_g, acc_b) = (0, 0, 0)
         wt_sum = 0
@@ -85,8 +85,7 @@ class Model(object):
             if (0 <= adj_x <= self.width - 1
                 and 0 <= adj_y <= self.height - 1
                 and (adj_x, adj_y) in seen_pixels):
-                (r, g, b) = self.generate_from_one_neighbor(adj_x, adj_y,
-                                                            result_pixels)
+                (r, g, b) = self.generate_from_one_neighbor(adj_x, adj_y)
                 wt = 1
                 acc_r += r * wt
                 acc_g += g * wt
@@ -100,7 +99,7 @@ class Model(object):
             new_r = int(round(float(acc_r)/wt_sum))
             new_g = int(round(float(acc_g)/wt_sum))
             new_b = int(round(float(acc_b)/wt_sum))
-        result_pixels[x,y] = (new_r, new_g, new_b)
+        self.result_pixels[x,y] = (new_r, new_g, new_b)
         seen_pixels.add((x,y))
                
     def generate_diagonally(self, result_image, region_func):
@@ -112,13 +111,11 @@ class Model(object):
             for y in range(self.height):
                 self.generate_one_pixel(x, y, result_pixels, seen_pixels,
                                         region_func)
-
-    def actually_floodfill(self, result_pixels, region_func, x, y,
-                           seen_pixels, remaining_pixels):
+    def actually_floodfill(self, region_func, x, y, seen_pixels, remaining_pixels):
         if len(seen_pixels) >= self.gen_pixel_limit:
             return
         else:
-            self.generate_one_pixel(x, y, result_pixels, seen_pixels, region_func)
+            self.generate_one_pixel(x, y, seen_pixels, region_func)
             adj_points = region_func(x, y, 1) # get all points 1 pixel away
             # traverse neighbors in random order
             wts = self.floodfill_wts_func(x,y)
@@ -130,27 +127,27 @@ class Model(object):
                     0 <= adj_x <= self.width - 1 and
                     0 <= adj_y <= self.height - 1 and
                     (adj_x, adj_y) in remaining_pixels):
-                    self.actually_floodfill(result_pixels, region_func, adj_x, 
+                    self.actually_floodfill(region_func, adj_x, 
                                             adj_y, seen_pixels, remaining_pixels)
             
     # this is a wrapper
-    def generate_floodfill(self, result_image, region_func):
-        (width, height) = result_image.size
+    def generate_floodfill(self, region_func):
+        (width, height) = self.result_image.size
         remaining_pixels = util.get_all_pixels(width, height)
-        result_pixels = result_image.load()      
+        self.result_pixels = self.result_image.load()      
 
         seen_pixels = set()
         while (len(remaining_pixels) > 0 and
                 len(seen_pixels) < self.gen_pixel_limit):        
             (seed_x, seed_y) = random.choice(list(remaining_pixels))
-            util.call_with_large_stack(self.actually_floodfill, result_pixels, region_func,
+            util.call_with_large_stack(self.actually_floodfill, region_func,
                                     seed_x, seed_y, seen_pixels, remaining_pixels)
             remaining_pixels -= seen_pixels     
                   
     def generate(self):
-        result = Image.new('RGB', (self.width, self.height))
-        self.generation_func(result, self.default_region_func)
-        return result
+        self.result_image = Image.new('RGB', (self.width, self.height))
+        self.generation_func(self.default_region_func)
+        return self.result_image
                                 
 def set_parameters():
     """
