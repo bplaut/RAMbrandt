@@ -130,7 +130,6 @@ def set_from_binary_image(image, width, height):
                 result.add((x,y))
     return result
                 
-
 def binary_image_from_set(white_pixels, width, height):
     result = Image.new('L', (width, height))
     result_pixels = result.load()
