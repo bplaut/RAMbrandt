@@ -15,7 +15,7 @@ import shape_funcs # for weighting directions in floodfill
 class Model(object):
     def __init__(self, *args):
         (train_region_size, train_region_func, train_palette_size, 
-         gen_region_size, mode, gen_pixel_limit, shape_strength_x, shape_strength_y, 
+         gen_region_size, gen_pixel_limit, shape_strength_x, shape_strength_y, 
          shape_func, palette_paths, output_dims, _, _) = args
 
         (self.width, self.height) = output_dims
@@ -24,19 +24,11 @@ class Model(object):
         self.floodfill_wts_func = lambda x,y: shape_func(x,y, self.width, self.height, shape_strength_x, shape_strength_y)
         
         self.gen_region_size = gen_region_size
-        self.mode = mode
         self.train_region_func = train_region_func
         # can't be more than width*height
         self.gen_pixel_limit = min(gen_pixel_limit,
                                    self.width * self.height)
-        if self.mode == 'diagonal':
-            self.generation_func = self.generate_diagonally
-            self.default_region_func = util.upper_left_region
-        elif self.mode == 'flood':
-            self.default_region_func = util.surrounding_region
-            self.generation_func = self.generate_floodfill
-        else:
-            raise ValueError("Not a supported mode. Supported modes are 'diagonal' and 'flood' (Flood is way better, choose flood. Flood is pretty much a generalization of diagonal)") 
+        self.default_region_func = util.surrounding_region
 
     def train_from_pixel(self, pixels, x, y, train_width, train_height):
         (r, g, b) = pixels[x,y]
@@ -102,15 +94,6 @@ class Model(object):
         self.result_pixels[x,y] = (new_r, new_g, new_b)
         seen_pixels.add((x,y))
                
-    def generate_diagonally(self, result_image, region_func):
-        # generates the image with one pass through, going from upper left
-        # to bottom right
-        seen_pixels = set()
-        result_pixels = result_image.load()
-        for x in range(self.width):
-            for y in range(self.height):
-                self.generate_one_pixel(x, y, result_pixels, seen_pixels,
-                                        region_func)
     def actually_floodfill(self, region_func, x, y, seen_pixels, remaining_pixels):
         if len(seen_pixels) >= self.gen_pixel_limit:
             return
@@ -146,7 +129,7 @@ class Model(object):
                   
     def generate(self):
         self.result_image = Image.new('RGB', (self.width, self.height))
-        self.generation_func(self.default_region_func)
+        self.generate_floodfill(self.default_region_func)
         return self.result_image
                                 
 def set_parameters():
@@ -162,9 +145,6 @@ def set_parameters():
     - gen_pixel_limit: in generation, we will stop generating pixels after
     this many have been generated (the rest will be black). Usually you want
     this to be equal to width * height
-    - mode: what method of generation: diagonal, scatter, or floodfill
-    Note: mode kind of determines what style the picture is drawn in
-    Note: some modes need additional args. They are listed now:
     - shape_func: This function determines what shape is draw. 
     Specifically, it determines the wts for a given x,y location, which
     determines which pixel we're likely to move to next. This function 
@@ -182,7 +162,6 @@ def set_parameters():
     (width, height) = (500, 500)
     output_dims = (width, height)
     gen_region_size = 2
-    mode = 'flood'
     gen_pixel_limit = width * height
     shape_func = shape_funcs.circle
     shape_strength_x = 100 # value of 1 corresponds to not really pursuing the shape at all
@@ -193,7 +172,7 @@ def set_parameters():
     # END PARAMETERS
 
     args = (train_region_size, train_region_func, train_palette_size,
-            gen_region_size, mode, gen_pixel_limit, shape_strength_x, shape_strength_y, 
+            gen_region_size, gen_pixel_limit, shape_strength_x, shape_strength_y, 
             shape_func, palette_paths, output_dims, palette_files, 
             palette_short_dir)
 
@@ -202,7 +181,7 @@ def set_parameters():
 def main():
     args = set_parameters()
     (train_region_size, train_region_func, train_palette_size, gen_region_size,
-     mode, gen_pixel_limit, shape_strength_x, shape_strength_y, shape_func, palette_paths, 
+     gen_pixel_limit, shape_strength_x, shape_strength_y, shape_func, palette_paths, 
      output_dims, palette_files, palette_short_dir) = args
 
     # initialize canvas
