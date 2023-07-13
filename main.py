@@ -100,7 +100,6 @@ class Model(object):
         total_pixels = self.width * self.height
         if len(seen_pixels) % (total_pixels // 10) == 0 and len(seen_pixels) > 0:
             print("%d%% done" % (100 * len(seen_pixels) // total_pixels))
-
         # now do the actual stuff
         if len(seen_pixels) >= self.gen_pixel_limit:
             return
