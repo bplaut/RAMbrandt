@@ -97,18 +97,15 @@ def four_circles(x,y,w,h, shape_strength_x, shape_strength_y):
 def heart(x, y, w, h, shape_strength_x, shape_strength_y):
     real_theta = theta(x,y,w,h)
     adjusted_x, adjusted_y = x,y
-    #if (x < w/2 and y < w/2) or (x > w/2 and y > w/2): adjusted_x = w - x
     actual_theta = theta(adjusted_x, adjusted_y, w,h)
     adjusted_theta = math.pi/2 - actual_theta
 
     x_comp = 48*math.cos(adjusted_theta)*((math.sin(adjusted_theta))**2)
     y_comp = (-13*math.cos(adjusted_theta) + 10*math.cos(2*adjusted_theta)
-              + 6*math.cos(3*adjusted_theta) +4*math.cos(4*adjusted_theta))
+              + 6*math.cos(3*adjusted_theta) +4*math.cos(4*adjusted_theta))      
     # now normalize
     (x_comp, y_comp) = normalize(x_comp, y_comp, shape_strength_x, shape_strength_y)
     if (x > w/2 and y > h/2) or (x < w/2 and y < h/2): y_comp *= -1
-    #print "x,y =", x,y, "theta =", int(180*real_theta/math.pi),
-    #print "x_comp, y_comp =", x_comp, y_comp
     return format_result(x_comp, y_comp)
 
 def horiz(x,y,h,shape_strength_x, shape_strength_y):

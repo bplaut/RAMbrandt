@@ -171,12 +171,14 @@ def set_parameters():
             shape_func = shape_funcs.uniform
         elif sys.argv[2] == 'fermat':
             shape_func = shape_funcs.fermat_spiral
+        elif sys.argv[2] == 'heart':
+            shape_func = shape_funcs.heart
         else:
-            ValueError("Not a supported shape")
+            raise ValueError("Not a supported shape")
         palette_files = ['gradient3.jpg'] if len(sys.argv) < 4 else sys.argv[3].split(',')
         train_region_size = 2 if len(sys.argv) < 5 else int(sys.argv[4])    
     except:
-        ValueError("Error with command line args. Usage: python main.py [result_size] [shape] [comma separated training files in a \"gradient\" folder] [training_region_size]")
+        raise ValueError("Error with command line args. Usage: python main.py [result_size] [shape] [comma separated training files in a \"gradient\" folder] [training_region_size]")
     # END USER PARAMETERS
 
     # BEGIN NON-USER PARAMETERS
