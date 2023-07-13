@@ -8,15 +8,16 @@
 from tkinter import *
 from PIL import Image, ImageTk
 import os
+import sys
 import random
 import util # file with helper functions
 import shape_funcs # for weighting directions in floodfill
 
 class Model(object):
-    def __init__(self, *args):
+    def __init__(self, *params):
         (train_region_size, train_region_func, train_palette_size, 
          gen_region_size, gen_pixel_limit, shape_strength_x, shape_strength_y, 
-         shape_func, palette_paths, output_dims, _, _) = args
+         shape_func, palette_paths, output_dims, _, _) = params
 
         (self.width, self.height) = output_dims
         self.palette_paths = palette_paths
@@ -135,54 +136,74 @@ class Model(object):
 def set_parameters():
     """
     PARAMETER DESCRIPTION
-    - train_region_size: in training, how large a region to condition on
+
+    User-specified parameters:
+    - train_region_size: in training, how large a region to condition on  
+    - palette_files: which files within palette_short_dir to train the palette on
+    - output_dims: the (width, height) size of the output image
+   - shape_func: This function determines what shape is drawn.
+    Specifically, it determines the wts for a given x,y location, which
+    determines which pixel we're likely to move to next. This function 
+    must return a list with strictly positive values.    
+
+    Non-user-specified parameters:
     - train_region_func: function that gets a list of neighboring points
     (i.e., surrounding region, upper left only, etc)
+    - gen_region_size: how large a region to condition on in generation.
+    Usually the same as train_region_size
     - train_palette_size: all images will be resized to have this many
     pixels during palette training
-    - output_dims: the (width, height) size of the output image :P
-    - gen_region_size: how large a region to condition on in generation
     - gen_pixel_limit: in generation, we will stop generating pixels after
     this many have been generated (the rest will be black). Usually you want
     this to be equal to width * height
-    - shape_func: This function determines what shape is draw. 
-    Specifically, it determines the wts for a given x,y location, which
-    determines which pixel we're likely to move to next. This function 
-    must return a list with strictly positive values.
     - shape_strength_x, shape_strength_y: scales how strongly we pursue shape_func
     - palette_short_dir: the path from main.py to the directory containing
     the images you want to use for palette training
-    - palette_files: which files within palette_short_dir to train the palette on
     """
       
-    # BEGIN PARAMETERS
-    train_region_size = 2
+    # BEGIN USER PARAMETERS
+    user_params = sys.argv
+    try:
+        result_size = int(sys.argv[1]) if len(sys.argv) >= 2 else 500
+        if len(sys.argv) < 3 or sys.argv[2] == 'circle':
+            shape_func = shape_funcs.circle
+        elif sys.argv[2] == 'fractal':
+            shape_func = shape_funcs.uniform
+        elif sys.argv[2] == 'fermat':
+            shape_func = shape_funcs.fermat_spiral
+        else:
+            ValueError("Not a supported shape")
+        palette_files = ['gradient3.jpg'] if len(sys.argv) < 4 else sys.argv[3].split(',')
+        train_region_size = 2 if len(sys.argv) < 5 else int(sys.argv[4])    
+    except:
+        ValueError("Error with command line args. Usage: python main.py [result_size] [shape] [comma separated training files in a \"gradient\" folder] [training_region_size]")
+    # END USER PARAMETERS
+
+    # BEGIN NON-USER PARAMETERS
     train_region_func = lambda x,y: util.surrounding_region(x,y,train_region_size)
     train_palette_size = 50*50
-    (width, height) = (500, 500)
+    (width, height) = (result_size, result_size)
     output_dims = (width, height)
-    gen_region_size = 2
+    gen_region_size = train_region_size
     gen_pixel_limit = width * height
-    shape_func = shape_funcs.circle
     shape_strength_x = 100 # value of 1 corresponds to not really pursuing the shape at all
     shape_strength_y = 100 # same here
-    palette_files = ['gradient3.jpg']
     palette_short_dir = 'input/gradients'
     palette_paths = util.get_input_paths(palette_short_dir, palette_files)
-    # END PARAMETERS
+    # END NON-USER PARAMETERS
 
-    args = (train_region_size, train_region_func, train_palette_size,
+    params = (train_region_size, train_region_func, train_palette_size,
             gen_region_size, gen_pixel_limit, shape_strength_x, shape_strength_y, 
             shape_func, palette_paths, output_dims, palette_files, 
             palette_short_dir)
 
-    return args
+    return params
 
 def main():
-    args = set_parameters()
+    params = set_parameters()
     (train_region_size, train_region_func, train_palette_size, gen_region_size,
      gen_pixel_limit, shape_strength_x, shape_strength_y, shape_func, palette_paths, 
-     output_dims, palette_files, palette_short_dir) = args
+     output_dims, palette_files, palette_short_dir) = params
 
     # initialize canvas
     root = Tk()
@@ -190,12 +211,15 @@ def main():
     canvas = Canvas(root, width = width, height = height)
     canvas.pack()
 
-    model = Model(*args)
+    model = Model(*params)
+    print("Training model...")
     model.train_palette()
+    print("Generating image...")    
     image = model.generate()
     output_name = util.make_output_name(
         shape_func, train_region_size, gen_region_size, 
         train_palette_size, palette_files)
+    print("Saving output to %s..." % output_name)    
     image.save(output_name)
     tk_image = ImageTk.PhotoImage(image)
     canvas.create_image(0, 0, anchor = NW, image = tk_image)
