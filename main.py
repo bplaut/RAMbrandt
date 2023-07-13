@@ -135,7 +135,7 @@ class Model(object):
 def set_parameters():
     """
     PARAMETER DESCRIPTION
-    - train_region_size:in training, how large a region to condition on
+    - train_region_size: in training, how large a region to condition on
     - train_region_func: function that gets a list of neighboring points
     (i.e., surrounding region, upper left only, etc)
     - train_palette_size: all images will be resized to have this many
@@ -166,7 +166,7 @@ def set_parameters():
     shape_func = shape_funcs.circle
     shape_strength_x = 100 # value of 1 corresponds to not really pursuing the shape at all
     shape_strength_y = 100 # same here
-    palette_files = ['gradient1.jpg']
+    palette_files = ['gradient3.jpg']
     palette_short_dir = 'input/gradients'
     palette_paths = util.get_input_paths(palette_short_dir, palette_files)
     # END PARAMETERS
