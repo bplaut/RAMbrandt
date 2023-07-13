@@ -162,7 +162,7 @@ class Model(object):
                                 
 def set_parameters():
     """
-    BEGIN PARAMETERS
+    PARAMETER DESCRIPTION
     - train_region_size:in training, how large a region to condition on
     - train_region_func: function that gets a list of neighboring points
     (i.e., surrounding region, upper left only, etc)
@@ -194,6 +194,7 @@ def set_parameters():
     to keep
     """
       
+    # BEGIN PARAMETERS
     train_region_size = 2
     train_region_func = lambda x,y: util.surrounding_region(x,y,train_region_size)
     train_palette_size = 50*50
@@ -201,7 +202,7 @@ def set_parameters():
     output_size = (width, height)
     gen_region_size = 2
     mode = 'flood'
-    gen_pixel_limit = 10000000000
+    gen_pixel_limit = 1000000000
     unformatted_func = shuffle_wt_funcs.circle
     x_scale = 100
     y_scale = 100
@@ -245,12 +246,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-# One good parameter set: train_region_size = 3, gen_region_size = 2,
-# train_size = (500, 500), mode = flood, training images = gradient1 and
-# gradient2, shuffle_wts_func = uniform
-
-# Another: train_region_size = gen_region_size = 2,
-# train_size = (50, 50), mode = flood, training images = gradient 1 and 2,
-# shuffle_wts_func = circle
 
