@@ -10,18 +10,18 @@ from PIL import Image, ImageTk
 import os
 import random
 import util # file with helper functions
-import shuffle_wt_funcs # for weighting directions in floodfill
+import shape_funcs # for weighting directions in floodfill
 
 class Model(object):
     def __init__(self, *args):
         (train_region_size, train_region_func, train_palette_size, 
-         gen_region_size, mode, gen_pixel_limit, x_scale, y_scale, 
-         unformatted_wts_func, palette_paths, output_size) = args
+         gen_region_size, mode, gen_pixel_limit, shape_strength_x, shape_strength_y, 
+         shape_func, palette_paths, output_dims, _, _) = args
 
-        (self.width, self.height) = output_size
+        (self.width, self.height) = output_dims
         self.palette_paths = palette_paths
         self.train_palette_size = train_palette_size
-        self.shuffle_wts_func = lambda x,y: unformatted_wts_func(x,y, self.width, self.height, x_scale, y_scale)
+        self.floodfill_wts_func = lambda x,y: shape_func(x,y, self.width, self.height, shape_strength_x, shape_strength_y)
         
         self.gen_region_size = gen_region_size
         self.mode = mode
@@ -114,28 +114,24 @@ class Model(object):
                                         region_func)
 
     def actually_floodfill(self, result_pixels, region_func, x, y,
-                           seen_pixels, allowed_pixels):
-        if len(seen_pixels) >= self.gen_pixel_limit:
-            return # done every pixel
+                           seen_pixels, remaining_pixels):
+        if len(seen_pixels) >= self.gen_pixel_limit: #and len(remaining_pixels) > 0:
+            return # Either did every pixel, or hit the limit
         else:
-            self.generate_one_pixel(x, y, result_pixels, seen_pixels,
-                                    region_func)
+            self.generate_one_pixel(x, y, result_pixels, seen_pixels, region_func)
             adj_points = region_func(x, y, 1) # get all points 1 pixel away
             # traverse neighbors in random order
-            shuffle_wts = self.shuffle_wts_func(x,y)
-            shuffle_wts = [max(wt, 1) for wt in shuffle_wts] # must be
-            # positive, let's say at least 1
-            adj_points = util.weighted_random_shuffle(adj_points, shuffle_wts)
+            wts = self.floodfill_wts_func(x,y)
+            wts = [max(wt, 1) for wt in wts] # must be positive, let's say at least 1
+            adj_points = util.weighted_random_shuffle(adj_points, wts)
             for (adj_x, adj_y) in adj_points:
                 # if we haven't seen it, it's in bounds, and it's allowed
                 if ((adj_x, adj_y) not in seen_pixels and
                     0 <= adj_x <= self.width - 1 and
                     0 <= adj_y <= self.height - 1 and
-                    (adj_x, adj_y) in allowed_pixels):
-                    
-                    self.actually_floodfill(result_pixels, region_func,
-                                            adj_x, adj_y, seen_pixels,
-                                            allowed_pixels)
+                    (adj_x, adj_y) in remaining_pixels):
+                    self.actually_floodfill(result_pixels, region_func, adj_x, 
+                                            adj_y, seen_pixels, remaining_pixels)
             
     # this is a wrapper
     def generate_floodfill(self, result_image, region_func):
@@ -143,13 +139,13 @@ class Model(object):
         remaining_pixels = util.get_all_pixels(width, height)
         result_pixels = result_image.load()      
 
-        overall_seen = set()
+        seen_pixels = set()
         while (len(remaining_pixels) > 0 and
-                len(overall_seen) < self.gen_pixel_limit):        
+                len(seen_pixels) < self.gen_pixel_limit):        
             (seed_x, seed_y) = random.choice(list(remaining_pixels))
             util.call_with_large_stack(self.actually_floodfill, result_pixels, region_func,
-                                    seed_x, seed_y, overall_seen, remaining_pixels)
-            remaining_pixels -= overall_seen     
+                                    seed_x, seed_y, seen_pixels, remaining_pixels)
+            remaining_pixels -= seen_pixels     
         
                            
     def generate(self):
@@ -165,25 +161,19 @@ def set_parameters():
     (i.e., surrounding region, upper left only, etc)
     - train_palette_size: all images will be resized to have this many
     pixels during palette training
-    - output_size: the (width, height) size of the output image :P
+    - output_dims: the (width, height) size of the output image :P
     - gen_region_size: how large a region to condition on in generation
     - gen_pixel_limit: in generation, we will stop generating pixels after
-    this many have been generated (the rest will be black)
+    this many have been generated (the rest will be black). Usually you want
+    this to be equal to width * height
     - mode: what method of generation: diagonal, scatter, or floodfill
     Note: mode kind of determines what style the picture is drawn in
     Note: some modes need additional args. They are listed now:
-    - shuffle_wts_func: NOTE: don't this. Change unformatted_func instead.
-    For floodfill, when we traverse the neighbors in a
-    random order, it can be a weighted random order. Higher weight
-    means we're more likely to traverse that neighbor earlier in the order.
-    - unformatted_func: A function that takes (x,y,width,height,x_scale,
-    y_scale) that will be called to determine the wts for the different
-    directions at a given x,y location
-    Note1: If the function depends on x,y, directions will have different
-    wts in different parts of the image. You can get cool effects with this
-    Note2: this function must return a list with strictly positive values
-    - x_scale, y_scale: your unformmated func can just ignore these if you
-    want, but I use them to scale the x and y componenets of the result
+    - shape_func: This function determines what shape is draw. 
+    Specifically, it determines the wts for a given x,y location, which
+    determines which pixel we're likely to move to next. This function 
+    must return a list with strictly positive values.
+    - shape_strength_x, shape_strength_y: scales how strongly we pursue shape_func
     - palette_short_dir: the path from main.py to the directory containing
     the images you want to use for palette training
     - palette_files: the indices of which images inside palette_short_dir
@@ -195,35 +185,34 @@ def set_parameters():
     train_region_func = lambda x,y: util.surrounding_region(x,y,train_region_size)
     train_palette_size = 50*50
     (width, height) = (500, 500)
-    output_size = (width, height)
+    output_dims = (width, height)
     gen_region_size = 2
     mode = 'flood'
-    gen_pixel_limit = 1000000000
-    unformatted_wts_func = shuffle_wt_funcs.circle
-    x_scale = 100
-    y_scale = 100
-    palette_files = ['gradient4.jpg', 'gradient3.jpg']
+    gen_pixel_limit = width * height
+    shape_func = shape_funcs.circle
+    shape_strength_x = 100 # value of 1 corresponds to not really pursuing the shape at all
+    shape_strength_y = 100 # same here
+    palette_files = ['gradient3.jpg']
     palette_short_dir = 'input/gradients'
     palette_paths = util.get_input_paths(palette_short_dir, palette_files)
     # END PARAMETERS
 
     args = (train_region_size, train_region_func, train_palette_size,
-            gen_region_size, mode, gen_pixel_limit, x_scale, y_scale, 
-            unformatted_wts_func, palette_paths, output_size)
-    stuff_for_file_naming = (palette_files, palette_short_dir, unformatted_wts_func)
+            gen_region_size, mode, gen_pixel_limit, shape_strength_x, shape_strength_y, 
+            shape_func, palette_paths, output_dims, palette_files, 
+            palette_short_dir)
 
-    return (args, stuff_for_file_naming)
+    return args
 
 def main():
-    (args, stuff_for_file_naming) = set_parameters()
+    args = set_parameters()
     (train_region_size, train_region_func, train_palette_size, gen_region_size,
-     mode, gen_pixel_limit, x_scale, y_scale, shuffle_wts_func, palette_paths, 
-     output_size) = args
-    (palette_files, palette_short_dir, unformatted_func) = stuff_for_file_naming
+     mode, gen_pixel_limit, shape_strength_x, shape_strength_y, shape_func, palette_paths, 
+     output_dims, palette_files, palette_short_dir) = args
 
     # initialize canvas
     root = Tk()
-    (width, height) = output_size
+    (width, height) = output_dims
     canvas = Canvas(root, width = width, height = height)
     canvas.pack()
 
@@ -231,7 +220,7 @@ def main():
     model.train_palette()
     image = model.generate()
     output_name = util.make_output_name(
-        unformatted_func, x_scale, y_scale, train_region_size, gen_region_size, 
+        shape_func, train_region_size, gen_region_size, 
         train_palette_size, palette_files)
     image.save(output_name)
     tk_image = ImageTk.PhotoImage(image)

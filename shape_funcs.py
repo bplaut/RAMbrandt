@@ -1,8 +1,7 @@
-# shuffle_wt_funcs.py - helper functions for art.py
+# shape_funcs.py - helper functions for main.py
 # Author: Ben Plaut
-# Date: 3/14/15 -
 # Contains different functions used for the weighting the different directions
-# when choosing which neighbor to floodfill next (in art.py). For example,
+# when choosing which neighbor to floodfill next (in main.py). For example,
 # if you always weight going right really high, you'll get horizontal
 # "brushstrokes". You can also make other shapes, like cirlces, etc.
 # Required external modules: None
@@ -10,7 +9,7 @@
 
 import math
 
-def uniform(x,y,width,height, x_scale, y_scale):
+def uniform(x,y,width,height, shape_strength_x, shape_strength_y):
     return format_result(1,1)
 
 # Note for all of the trigonometric functions (which is most of them):
@@ -50,40 +49,40 @@ def format_result(x_comp, y_comp, num_wts = 4, default_wt = 1):
         result[1] = abs(y_comp)
     return result
 
-def normalize(x_comp, y_comp, x_scale, y_scale):
+def normalize(x_comp, y_comp, shape_strength_x, shape_strength_y):
     if x_comp == y_comp == 0: (x_comp, y_comp) = (1, 1)
     magnitude = math.sqrt(x_comp**2 + y_comp**2)
     x_comp /= magnitude
     y_comp /= magnitude
-    x_comp *= x_scale
-    y_comp *= y_scale
+    x_comp *= shape_strength_x
+    y_comp *= shape_strength_y
     return (x_comp, y_comp)
 
-def parabola(x, y, w, h, x_scale, y_scale):
+def parabola(x, y, w, h, shape_strength_x, shape_strength_y):
     x = x - w/2 # adjust so that x = 0 is the center. y doesn't matter
-    x_comp = x_scale
-    y_comp = y_scale * 2*x
-    (x_comp, y_comp) = normalize(x_comp, y_comp, x_scale, y_scale)
+    x_comp = shape_strength_x
+    y_comp = shape_strength_y * 2*x
+    (x_comp, y_comp) = normalize(x_comp, y_comp, shape_strength_x, shape_strength_y)
     return format_result(x_comp, y_comp)
         
-def circle(x, y, w, h, x_scale, y_scale):
-    x_component = x_scale * (-math.sin(theta(x,y,w,h)))
-    y_component = y_scale * math.cos(theta(x,y,w,h))
+def circle(x, y, w, h, shape_strength_x, shape_strength_y):
+    x_component = shape_strength_x * (-math.sin(theta(x,y,w,h)))
+    y_component = shape_strength_y * math.cos(theta(x,y,w,h))
     return format_result(x_component, y_component)
 
-def double_circle(x,y,w,h, x_scale, y_scale):
+def double_circle(x,y,w,h, shape_strength_x, shape_strength_y):
     # left half and right half are separate circles
     if x > w/2:
         x = x - w/2
     # two circles, each with width w/2
-    return circle(x, y, w/2, h, x_scale, y_scale)
+    return circle(x, y, w/2, h, shape_strength_x, shape_strength_y)
 
-def superimposed_circles(x,y,w,h, x_scale, y_scale):
-    wts1 = circle(x,y,w,h,x_scale,y_scale)
-    wts2 = four_circles(x,y,w,h,x_scale,y_scale)
+def superimposed_circles(x,y,w,h, shape_strength_x, shape_strength_y):
+    wts1 = circle(x,y,w,h,shape_strength_x,shape_strength_y)
+    wts2 = four_circles(x,y,w,h,shape_strength_x,shape_strength_y)
     return [wts1[i] + wts2[i] for i in xrange(len(wts1))]
 
-def four_circles(x,y,w,h, x_scale, y_scale):
+def four_circles(x,y,w,h, shape_strength_x, shape_strength_y):
     # figure out which quadrant it's in
     if x > w/2 and y > w/2:
         x = x - w/2
@@ -92,10 +91,10 @@ def four_circles(x,y,w,h, x_scale, y_scale):
         y = y - h/2
     elif x > w/2 and y < h/2:
         x = x - w/2
-    return circle(x,y, w/2, h/2, x_scale, y_scale)
+    return circle(x,y, w/2, h/2, shape_strength_x, shape_strength_y)
 
 # heart doesn't actually work :(
-def heart(x, y, w, h, x_scale, y_scale):
+def heart(x, y, w, h, shape_strength_x, shape_strength_y):
     real_theta = theta(x,y,w,h)
     adjusted_x, adjusted_y = x,y
     #if (x < w/2 and y < w/2) or (x > w/2 and y > w/2): adjusted_x = w - x
@@ -106,58 +105,58 @@ def heart(x, y, w, h, x_scale, y_scale):
     y_comp = (-13*math.cos(adjusted_theta) + 10*math.cos(2*adjusted_theta)
               + 6*math.cos(3*adjusted_theta) +4*math.cos(4*adjusted_theta))
     # now normalize
-    (x_comp, y_comp) = normalize(x_comp, y_comp, x_scale, y_scale)
+    (x_comp, y_comp) = normalize(x_comp, y_comp, shape_strength_x, shape_strength_y)
     if (x > w/2 and y > h/2) or (x < w/2 and y < h/2): y_comp *= -1
     #print "x,y =", x,y, "theta =", int(180*real_theta/math.pi),
     #print "x_comp, y_comp =", x_comp, y_comp
     return format_result(x_comp, y_comp)
 
-def horiz(x,y,h,x_scale, y_scale):
-    return [x_scale, 1, 1, 1]
+def horiz(x,y,h,shape_strength_x, shape_strength_y):
+    return [shape_strength_x, 1, 1, 1]
 
-def split_over_width(x,y, width, height, x_scale, y_scale):
+def split_over_width(x,y, width, height, shape_strength_x, shape_strength_y):
     return ([1, (x-width/2)/100 + 1, 1, 1] if x > width/2
             else [(width/2-x)/100 + 1 + y, 1, 1, 1])
 
 # not very good
-def fermat_spiral(x,y,w,h, x_scale, y_scale):
+def fermat_spiral(x,y,w,h, shape_strength_x, shape_strength_y):
     t = theta(x,y,w,h)
     x_comp = math.cos(t) - 2*t*math.sin(t)
     y_comp = 2*t*math.cos(t) + math.sin(t)
-    (x_comp, y_comp) = normalize(x_comp, y_comp, x_scale, y_scale)
+    (x_comp, y_comp) = normalize(x_comp, y_comp, shape_strength_x, shape_strength_y)
     return format_result(x_comp, y_comp)
 
 # not very good
-def hyperbola(x,y,w,h, x_scale, y_scale):
+def hyperbola(x,y,w,h, shape_strength_x, shape_strength_y):
     adjusted_x = x - w/2
     adjusted_y = h/2 - y
     if adjusted_x == adjusted_y == 0:
         return [1,1,1,1] # avoid division by 0 in normalization
     x_comp = adjusted_y
     y_comp = adjusted_x
-    (x_comp, y_comp) = normalize(x_comp, y_comp, x_scale, y_scale)
+    (x_comp, y_comp) = normalize(x_comp, y_comp, shape_strength_x, shape_strength_y)
     return format_result(x_comp, y_comp)
 
 # not very good
-def figure_8(x,y,w,h, x_scale, y_scale):
+def figure_8(x,y,w,h, shape_strength_x, shape_strength_y):
     adjusted_x = x - w/2
     adjusted_y = h/2 - y
     if adjusted_y == 0: return [1,1,1,1]
     x_comp = 1
     y_comp = (adjusted_x**2 - 2*(adjusted_x**3))/adjusted_y
-    (x_comp, y_comp) = normalize(x_comp, y_comp, x_scale, y_scale)
+    (x_comp, y_comp) = normalize(x_comp, y_comp, shape_strength_x, shape_strength_y)
     return format_result(x_comp, y_comp)
 
-def weird_circle(x, y, w, h, x_scale, y_scale):
+def weird_circle(x, y, w, h, shape_strength_x, shape_strength_y):
     curr_theta = theta(x,y,w,h)
     x_comp = -math.sin(curr_theta) + .7
     y_comp =  math.cos(curr_theta)
-    (x_comp, y_comp) = normalize(x_comp, y_comp, x_scale, y_scale)
+    (x_comp, y_comp) = normalize(x_comp, y_comp, shape_strength_x, shape_strength_y)
     return format_result(x_comp, y_comp)
 
-def trying_random_things(x,y,w,h, x_scale, y_scale):
+def trying_random_things(x,y,w,h, shape_strength_x, shape_strength_y):
     x_comp = 100
     y_comp = 1
-    (x_comp, y_comp) = normalize(x_comp, y_comp, x_scale, y_scale)
+    (x_comp, y_comp) = normalize(x_comp, y_comp, shape_strength_x, shape_strength_y)
     return format_result(x_comp, y_comp)
     

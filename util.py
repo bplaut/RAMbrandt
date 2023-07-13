@@ -153,11 +153,11 @@ def get_input_paths(image_short_dir, filenames):
 def sans_brackets(L):
     return str(L)[1:len(L) - 1]
 
-def make_output_name(unformatted_func, x_scale, y_scale, train_region_size, gen_region_size, 
+def make_output_name(shape_func, train_region_size, gen_region_size, 
                      train_palette_size, palette_files):
-    return ('output/%s_x=%d_y=%d_train_size=%d_gen_region_size=%d_train_pal_size=%d_palette_files=%s.jpg' %
-            (get_func_string(unformatted_func), x_scale, y_scale, train_region_size, 
-             gen_region_size, train_palette_size, sans_brackets(palette_files)))
+    return ('output/%s_train_size=%d_gen_region_size=%d_train_pal_size=%d_palette_files=%s.jpg' %
+            (get_func_string(shape_func), train_region_size, gen_region_size, 
+             train_palette_size, sans_brackets(palette_files)))
 
 def get_all_pixels(width, height):
     result = []
