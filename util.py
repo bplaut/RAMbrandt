@@ -1,6 +1,6 @@
 # util.py - helper functions for art.py
 # Author: Ben Plaut
-# Contains random helper functions for art.py and objects.py
+# Contains helper functions for main.py
 # Required external modules: PIL
 # Required python files: None
 
@@ -10,21 +10,19 @@ import random
 import copy
 import math
 import os
+import sys
+import threading
 
-# function taken from 112 course notes at http://www.kosbie.net/cmu/fall-12/15-112/handouts/notes-recursion/floodFill-pixel-based.py
-def callWithLargeStack(f,*args):
-    import sys
-    import threading
+def call_with_large_stack(f,*args):
     threading.stack_size(2**27)  # 64MB stack
     sys.setrecursionlimit(2**27) # will hit 64MB stack limit first
     # need new thread to get the redefined stack size
-    def wrappedFn(resultWrapper): resultWrapper[0] = f(*args)
-    resultWrapper = [None]
-    #thread = threading.Thread(target=f, args=args)
-    thread = threading.Thread(target=wrappedFn, args=[resultWrapper])
+    def wrapped_fn(result_wrapper): result_wrapper[0] = f(*args)
+    result_wrapper = [None]
+    thread = threading.Thread(target=wrapped_fn, args=[result_wrapper])
     thread.start()
     thread.join()
-    return resultWrapper[0]
+    return result_wrapper[0]
 
 def weighted_random_index(L, wts):
     rand_float = random.random() # between 0.0 and 1.0
@@ -153,65 +151,19 @@ def get_input_paths(image_short_dir, indices_to_keep):
 def sans_brackets(L):
     return str(L)[1:len(L) - 1]
 
-def make_output_name(unformatted_func, x_scale, y_scale, train_region_size,
-                     gen_region_size, train_palette_size, train_objects_size,
-                     palette_short_dir,
-                     pal_indices, obj_short_dir,obj_indices,i):
+def make_output_name(unformatted_func, x_scale, y_scale, train_region_size, gen_region_size, 
+                     train_palette_size, palette_short_dir, pal_index):
     j = palette_short_dir.find("/") + 1 # skip the /
     palette_short_dir = palette_short_dir[j:]
-    j = obj_short_dir.find("/") + 1
-    obj_short_dir = obj_short_dir[j:]
-    return ('output/%s_x%d_y%d_trp%d_tro%d_ge%d_si%d_p-%s%s_o-%s%s_%d.jpg' %
-            (get_func_string(unformatted_func), x_scale, y_scale,
-             train_region_size, gen_region_size, train_palette_size,
-             train_objects_size, palette_short_dir,
-             sans_brackets(pal_indices), obj_short_dir,
-             sans_brackets(obj_indices), i))
+    return ('output/%s_x=%d_y=%d_train_size=%d_gen_region_size=%d_train_pal_size=%d_palette=%s%s.jpg' %
+            (get_func_string(unformatted_func), x_scale, y_scale, train_region_size, 
+             gen_region_size, train_palette_size, palette_short_dir, sans_brackets(pal_index)))
 
 def get_all_pixels(width, height):
     result = []
     for y in range(height):
         result += [(x,y) for x in range(width)]
     return set(result)
-
-def adjust_object(obj, curr_width, curr_height, new_left, new_top, new_width,
-                  new_height):
-    # obj is a pixel set representing the pixels in the object
-    white_val = 255
-
-    obj_image = binary_image_from_set(obj, curr_width, curr_height)
-    resized_obj_image = obj_image.resize((new_width, new_height))
-    resized_set = set_from_binary_image(resized_obj_image, new_width,
-                                        new_height)
-    translated_obj = [(x + new_left, y + new_top) for (x,y) in resized_set]
-    return translated_obj
-
-def randomly_modify_object(obj, curr_width, curr_height, result_width,
-                           result_height):
-    if (float(curr_width)/result_width) > (float(curr_height)/result_height):
-        # width is limiting dimension
-        max_factor = float(result_width)/curr_width
-    else: # it's height
-        max_factor = float(result_height)/curr_height
-    min_factor_we_want = max_factor
-    min_factor = min(min_factor_we_want, max_factor) # can't be bigger than max
-    rand_float = random.random()
-    # 0 <= rand_float < 1, but we want min_factor <= rand_float < max_factor
-    rand_float = 1
-    resize_factor = rand_float * (max_factor - min_factor) + min_factor
-    
-    new_width = int(round(resize_factor * curr_width))
-    new_height = int(round(resize_factor * curr_height))
-
-    left_range = (0, result_width - new_width)
-    top_range = (0, result_height - new_height)
-    new_left = random.randint(*left_range)
-    new_top = random.randint(*top_range)
-    
-    adjusted_obj = adjust_object(obj, curr_width, curr_height, new_left,
-                                 new_top, new_width, new_height)
-    return adjusted_obj
-
 
     
 

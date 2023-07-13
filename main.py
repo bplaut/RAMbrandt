@@ -1,35 +1,27 @@
-# art.py - generates artistic pictures
+# main.py - generates artistic pictures
 # Author: Ben Plaut
 # Main file. Contains main model for training and generation, as well as all
 # of the parameters, which are set in the set_parameters function.
 # Required external modules: PIL
-# Requires python files: util.py, objects.py
+# Requires python files: util.py
 
 from tkinter import *
 from PIL import Image, ImageTk
 import os
 import random
 import util # file with helper functions
-import objects # object recognition
 import shuffle_wt_funcs # for weighting directions in floodfill
 
 class Model(object):
     def __init__(self, *args):
         (train_region_size, train_region_func, train_palette_size, 
-         train_objects_size, gen_region_size, mode, gen_pixel_limit, 
-         x_scale, y_scale, shuffle_wts_func, extra_args, palette_paths, 
-         obj_paths, output_size, only_objects, num_objects) = args
+         gen_region_size, mode, gen_pixel_limit, x_scale, y_scale, 
+         shuffle_wts_func, extra_args, palette_paths, output_size) = args
 
         # extra_args specified additional arguments for the generation function
         (self.result_width, self.result_height) = output_size
         self.palette_paths = palette_paths
-        self.obj_paths = obj_paths
-
-        self.only_objects = only_objects
-        self.num_objects = num_objects
-
         self.train_palette_size = train_palette_size
-        self.train_objects_size=  train_objects_size
         
         self.gen_region_size = gen_region_size
         self.mode = mode
@@ -73,22 +65,7 @@ class Model(object):
             # First, do the markov-chain-style conditioning
             for x in range(new_width):
                 for y in range(new_height):
-                    self.train_from_pixel(pixels, x, y, new_width,
-                                          new_height)
-            # Now, find the most prominent object in the image
-    def train_objects(self):
-        self.objects = []
-        M = objects.Object_Model()
-        for image_path in self.obj_paths: # local path, not full path
-            image = Image.open(image_path)
-            # want to resize so that dimension ratio is maintained, but the
-            # number of pixels is now self.train_objects_size
-            image = util.resize_intelligently(image, self.train_objects_size)
-
-            obj_tuple = M.find_best_object(image)
-            if obj_tuple is not None:
-                # None indicates no good objects were found
-                self.objects.append(obj_tuple)
+                    self.train_from_pixel(pixels, x, y, new_width, new_height)
                                           
     def generate_from_one_neighbor(self, prev_x, prev_y, pixels):
         (prev_r, prev_g, prev_b) = pixels[prev_x, prev_y]
@@ -164,38 +141,17 @@ class Model(object):
     # this is a wrapper
     def generate_floodfill(self, result_image, region_func):
         (self.shuffle_wts_func,) = self.extra_args
-        # first draw as many objects as we want
         (result_width, result_height) = result_image.size
         remaining_pixels = util.get_all_pixels(result_width, result_height)
         result_pixels = result_image.load()      
 
         overall_seen = set()
-        for i in range(self.num_objects):
-            (obj, (curr_width, curr_height)) = random.choice(self.objects)
-
-            modify_args = (obj, curr_width, curr_height, result_width,
-                           result_height)
-            adjusted_obj = util.randomly_modify_object(*modify_args)
-            
-            allowed_pixels = adjusted_obj
-            (seed_x, seed_y) = random.choice(list(adjusted_obj))
-
-            seen_this_iteration = set()
-            util.callWithLargeStack(self.actually_floodfill, result_pixels,
-                                    region_func, seed_x, seed_y,
-                                    seen_this_iteration, allowed_pixels)
-            remaining_pixels -= seen_this_iteration
-            overall_seen.update(seen_this_iteration)
-
-        if not self.only_objects:
-            while (len(remaining_pixels) > 0 and
-                   len(overall_seen) < self.gen_pixel_limit):        
-                (seed_x, seed_y) = random.choice(list(remaining_pixels))
-                util.callWithLargeStack(self.actually_floodfill,
-                                        result_pixels,
-                                        region_func, seed_x, seed_y,
-                                        overall_seen, remaining_pixels)
-                remaining_pixels -= overall_seen     
+        while (len(remaining_pixels) > 0 and
+                len(overall_seen) < self.gen_pixel_limit):        
+            (seed_x, seed_y) = random.choice(list(remaining_pixels))
+            util.call_with_large_stack(self.actually_floodfill, result_pixels, region_func,
+                                    seed_x, seed_y, overall_seen, remaining_pixels)
+            remaining_pixels -= overall_seen     
         
                            
     def generate(self):
@@ -211,8 +167,6 @@ def set_parameters():
     (i.e., surrounding region, upper left only, etc)
     - train_palette_size: all images will be resized to have this many
     pixels during palette training
-    - train_objects_size: all images will be resized to have this many
-    pixels during object training
     - output_size: the (width, height) size of the output image :P
     - gen_region_size: how large a region to condition on in generation
     - gen_pixel_limit: in generation, we will stop generating pixels after
@@ -233,20 +187,15 @@ def set_parameters():
     - x_scale, y_scale: your unformmated func can just ignore these if you
     want, but I use them to scale the x and y componenets of the result
     - extra_args: need to pack whatever extra args you want in this tuple
-    - palette_short_dir: the path from art.py to the directory containing
+    - palette_short_dir: the path from main.py to the directory containing
     the images you want to use for palette training
     - pal_indices: the indices of which images inside palette_short_dir
     to keep
-    obj_short_dir: the path from art.py to directory containing the
-    images you want to use for object training
-    obj_indices: like pal_indices
     """
       
     train_region_size = 2
-    train_region_func = lambda x,y: util.surrounding_region(x,y,
-                                                            train_region_size)
+    train_region_func = lambda x,y: util.surrounding_region(x,y,train_region_size)
     train_palette_size = 50*50
-    train_objects_size = 500*500
     (width, height) = (500, 500)
     output_size = (width, height)
     gen_region_size = 2
@@ -255,39 +204,26 @@ def set_parameters():
     unformatted_func = shuffle_wt_funcs.circle
     x_scale = 100
     y_scale = 100
-    shuffle_wts_func = lambda x,y: unformatted_func(x,y, width, height,
-                                                    x_scale, y_scale)
-    only_objects = False
-    num_objects = 0
-
+    shuffle_wts_func = lambda x,y: unformatted_func(x,y, width, height, x_scale, y_scale)
     extra_args = (shuffle_wts_func,)
     pal_indices = [0]
     palette_short_dir = 'input/gradients'
-    obj_indices = [0]
-    obj_short_dir = 'input/shapes'
+    palette_paths = util.get_input_paths(palette_short_dir, pal_indices)
     # END PARAMETERS
 
-    palette_paths = util.get_input_paths(palette_short_dir, pal_indices)
-    obj_paths = [] #--util.get_input_paths(obj_short_dir, obj_indices)
-    # objects don't work right now so we're skipping that whole thing
-
     args = (train_region_size, train_region_func, train_palette_size,
-            train_objects_size, gen_region_size, mode, gen_pixel_limit,
-            x_scale, y_scale, shuffle_wts_func, extra_args, palette_paths,
-            obj_paths, output_size, only_objects, num_objects)
-    stuff_for_file_naming = (pal_indices, palette_short_dir, obj_indices,
-                             obj_short_dir, unformatted_func)
+            gen_region_size, mode, gen_pixel_limit, x_scale, y_scale, 
+            shuffle_wts_func, extra_args, palette_paths, output_size)
+    stuff_for_file_naming = (pal_indices, palette_short_dir, unformatted_func)
 
     return (args, stuff_for_file_naming)
 
 def main():
     (args, stuff_for_file_naming) = set_parameters()
-    (train_region_size, train_region_func, train_palette_size,
-     train_objects_size, gen_region_size, mode, gen_pixel_limit, x_scale,
-     y_scale, shuffle_wts_func, extra_args, palette_paths, obj_paths,
-     output_size, only_objects, num_objects) = args
-    (pal_indices, palette_short_dir, obj_indices,
-     obj_short_dir, unformatted_func) = stuff_for_file_naming
+    (train_region_size, train_region_func, train_palette_size, gen_region_size,
+     mode, gen_pixel_limit, x_scale, y_scale, shuffle_wts_func, extra_args, 
+     palette_paths, output_size) = args
+    (pal_indices, palette_short_dir, unformatted_func) = stuff_for_file_naming
 
     # initialize canvas
     root = Tk()
@@ -295,18 +231,13 @@ def main():
     canvas = Canvas(root, width = width, height = height)
     canvas.pack()
 
-    num_images = 1
     model = Model(*args)
     model.train_palette()
-    model.train_objects()
-    for i in range(num_images):
-        image = model.generate()
-
-        output_name = util.make_output_name(*(
-                unformatted_func, x_scale, y_scale, train_region_size,
-                gen_region_size, train_palette_size, train_objects_size,
-                palette_short_dir, pal_indices, obj_short_dir, obj_indices,i))
-        image.save(output_name)
+    image = model.generate()
+    output_name = util.make_output_name(
+        unformatted_func, x_scale, y_scale, train_region_size, gen_region_size, 
+        train_palette_size, palette_short_dir, pal_indices)
+    image.save(output_name)
     tk_image = ImageTk.PhotoImage(image)
     canvas.create_image(0, 0, anchor = NW, image = tk_image)
     root.mainloop()
