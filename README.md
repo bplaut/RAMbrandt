@@ -1,3 +1,5 @@
+# RAMbrandt
+
 RAMbrandt is automatically generates "artistic" images using vector calculus, floodfill, and Markov chains. Some of my favorite outputs:
 
 ![3_2_(500, 500)_flood_dient1 jpg_2_38](https://github.com/bplaut/art-generator/assets/7914058/b5762abe-e180-43cf-87e7-10572e6d6b69)
