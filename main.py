@@ -163,18 +163,18 @@ def set_parameters():
       
     # BEGIN USER PARAMETERS
     user_params = sys.argv
+    if len(sys.argv) < 3 or sys.argv[2] == 'circle':
+        shape_func = shape_funcs.circle
+    elif sys.argv[2] == 'fractal':
+        shape_func = shape_funcs.uniform
+    elif sys.argv[2] == 'fermat':
+        shape_func = shape_funcs.fermat_spiral
+    elif sys.argv[2] == 'heart':
+        shape_func = shape_funcs.heart
+    else:
+        raise ValueError("Not a supported shape")    
     try:
         result_size = int(sys.argv[1]) if len(sys.argv) >= 2 else 500
-        if len(sys.argv) < 3 or sys.argv[2] == 'circle':
-            shape_func = shape_funcs.circle
-        elif sys.argv[2] == 'fractal':
-            shape_func = shape_funcs.uniform
-        elif sys.argv[2] == 'fermat':
-            shape_func = shape_funcs.fermat_spiral
-        elif sys.argv[2] == 'heart':
-            shape_func = shape_funcs.heart
-        else:
-            raise ValueError("Not a supported shape")
         palette_files = ['gradient3.jpg'] if len(sys.argv) < 4 else sys.argv[3].split(',')
         train_region_size = 2 if len(sys.argv) < 5 else int(sys.argv[4])    
     except:
