@@ -16,20 +16,19 @@ class Model(object):
     def __init__(self, *args):
         (train_region_size, train_region_func, train_palette_size, 
          gen_region_size, mode, gen_pixel_limit, x_scale, y_scale, 
-         shuffle_wts_func, extra_args, palette_paths, output_size) = args
+         unformatted_wts_func, palette_paths, output_size) = args
 
-        # extra_args specified additional arguments for the generation function
-        (self.result_width, self.result_height) = output_size
+        (self.width, self.height) = output_size
         self.palette_paths = palette_paths
         self.train_palette_size = train_palette_size
+        self.shuffle_wts_func = lambda x,y: unformatted_wts_func(x,y, self.width, self.height, x_scale, y_scale)
         
         self.gen_region_size = gen_region_size
         self.mode = mode
         self.train_region_func = train_region_func
         # can't be more than width*height
         self.gen_pixel_limit = min(gen_pixel_limit,
-                                   self.result_width * self.result_height)
-        self.extra_args = extra_args
+                                   self.width * self.height)
         if self.mode == 'diagonal':
             self.generation_func = self.generate_diagonally
             self.default_region_func = util.upper_left_region
@@ -57,7 +56,6 @@ class Model(object):
 
         for image_path in self.palette_paths: # local path, not full path
             image = Image.open(image_path)
-            print(image_path)
             # want to resize so that dimension ratio is maintained, but the
             # number of pixels is now self.train_palette_size
             image = util.resize_intelligently(image, self.train_palette_size)
@@ -84,8 +82,8 @@ class Model(object):
         (acc_r, acc_g, acc_b) = (0, 0, 0)
         wt_sum = 0
         for (adj_x, adj_y) in adj_points:
-            if (0 <= adj_x <= self.result_width - 1
-                and 0 <= adj_y <= self.result_height - 1
+            if (0 <= adj_x <= self.width - 1
+                and 0 <= adj_y <= self.height - 1
                 and (adj_x, adj_y) in seen_pixels):
                 (r, g, b) = self.generate_from_one_neighbor(adj_x, adj_y,
                                                             result_pixels)
@@ -110,8 +108,8 @@ class Model(object):
         # to bottom right
         seen_pixels = set()
         result_pixels = result_image.load()
-        for x in range(self.result_width):
-            for y in range(self.result_height):
+        for x in range(self.width):
+            for y in range(self.height):
                 self.generate_one_pixel(x, y, result_pixels, seen_pixels,
                                         region_func)
 
@@ -131,8 +129,8 @@ class Model(object):
             for (adj_x, adj_y) in adj_points:
                 # if we haven't seen it, it's in bounds, and it's allowed
                 if ((adj_x, adj_y) not in seen_pixels and
-                    0 <= adj_x <= self.result_width - 1 and
-                    0 <= adj_y <= self.result_height - 1 and
+                    0 <= adj_x <= self.width - 1 and
+                    0 <= adj_y <= self.height - 1 and
                     (adj_x, adj_y) in allowed_pixels):
                     
                     self.actually_floodfill(result_pixels, region_func,
@@ -141,9 +139,8 @@ class Model(object):
             
     # this is a wrapper
     def generate_floodfill(self, result_image, region_func):
-        (self.shuffle_wts_func,) = self.extra_args
-        (result_width, result_height) = result_image.size
-        remaining_pixels = util.get_all_pixels(result_width, result_height)
+        (width, height) = result_image.size
+        remaining_pixels = util.get_all_pixels(width, height)
         result_pixels = result_image.load()      
 
         overall_seen = set()
@@ -156,7 +153,7 @@ class Model(object):
         
                            
     def generate(self):
-        result = Image.new('RGB', (self.result_width, self.result_height))
+        result = Image.new('RGB', (self.width, self.height))
         self.generation_func(result, self.default_region_func)
         return result
                                 
@@ -187,7 +184,6 @@ def set_parameters():
     Note2: this function must return a list with strictly positive values
     - x_scale, y_scale: your unformmated func can just ignore these if you
     want, but I use them to scale the x and y componenets of the result
-    - extra_args: need to pack whatever extra args you want in this tuple
     - palette_short_dir: the path from main.py to the directory containing
     the images you want to use for palette training
     - palette_files: the indices of which images inside palette_short_dir
@@ -203,11 +199,9 @@ def set_parameters():
     gen_region_size = 2
     mode = 'flood'
     gen_pixel_limit = 1000000000
-    unformatted_func = shuffle_wt_funcs.circle
+    unformatted_wts_func = shuffle_wt_funcs.circle
     x_scale = 100
     y_scale = 100
-    shuffle_wts_func = lambda x,y: unformatted_func(x,y, width, height, x_scale, y_scale)
-    extra_args = (shuffle_wts_func,)
     palette_files = ['gradient4.jpg', 'gradient3.jpg']
     palette_short_dir = 'input/gradients'
     palette_paths = util.get_input_paths(palette_short_dir, palette_files)
@@ -215,16 +209,16 @@ def set_parameters():
 
     args = (train_region_size, train_region_func, train_palette_size,
             gen_region_size, mode, gen_pixel_limit, x_scale, y_scale, 
-            shuffle_wts_func, extra_args, palette_paths, output_size)
-    stuff_for_file_naming = (palette_files, palette_short_dir, unformatted_func)
+            unformatted_wts_func, palette_paths, output_size)
+    stuff_for_file_naming = (palette_files, palette_short_dir, unformatted_wts_func)
 
     return (args, stuff_for_file_naming)
 
 def main():
     (args, stuff_for_file_naming) = set_parameters()
     (train_region_size, train_region_func, train_palette_size, gen_region_size,
-     mode, gen_pixel_limit, x_scale, y_scale, shuffle_wts_func, extra_args, 
-     palette_paths, output_size) = args
+     mode, gen_pixel_limit, x_scale, y_scale, shuffle_wts_func, palette_paths, 
+     output_size) = args
     (palette_files, palette_short_dir, unformatted_func) = stuff_for_file_naming
 
     # initialize canvas
