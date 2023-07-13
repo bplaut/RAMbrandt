@@ -113,7 +113,7 @@ class Model(object):
                     self.actually_floodfill(region_func, adj_x, 
                                             adj_y, seen_pixels, remaining_pixels)
             
-    # this is a wrapper
+    # this is a wrapper, the main function is actually_floodfill
     def generate_floodfill(self, region_func):
         (width, height) = self.result_image.size
         remaining_pixels = util.get_all_pixels(width, height)
@@ -203,4 +203,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
