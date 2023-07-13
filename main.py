@@ -115,8 +115,8 @@ class Model(object):
 
     def actually_floodfill(self, result_pixels, region_func, x, y,
                            seen_pixels, remaining_pixels):
-        if len(seen_pixels) >= self.gen_pixel_limit: #and len(remaining_pixels) > 0:
-            return # Either did every pixel, or hit the limit
+        if len(seen_pixels) >= self.gen_pixel_limit:
+            return
         else:
             self.generate_one_pixel(x, y, result_pixels, seen_pixels, region_func)
             adj_points = region_func(x, y, 1) # get all points 1 pixel away
@@ -146,8 +146,7 @@ class Model(object):
             util.call_with_large_stack(self.actually_floodfill, result_pixels, region_func,
                                     seed_x, seed_y, seen_pixels, remaining_pixels)
             remaining_pixels -= seen_pixels     
-        
-                           
+                  
     def generate(self):
         result = Image.new('RGB', (self.width, self.height))
         self.generation_func(result, self.default_region_func)
@@ -176,8 +175,7 @@ def set_parameters():
     - shape_strength_x, shape_strength_y: scales how strongly we pursue shape_func
     - palette_short_dir: the path from main.py to the directory containing
     the images you want to use for palette training
-    - palette_files: the indices of which images inside palette_short_dir
-    to keep
+    - palette_files: which files within palette_short_dir to train the palette on
     """
       
     # BEGIN PARAMETERS
