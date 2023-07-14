@@ -83,7 +83,7 @@ def cosine(x, y, w, h, shape_strength_x, shape_strength_y):
     period = w
     adjusted_x = 2 * math.pi * x / period
     y_comp = -math.sin(adjusted_x) * shape_strength_y
-    x_comp = -math.sin(adjusted_x + math.pi*period/4) * shape_strength_y
+    x_comp = (1 - abs(math.sin(adjusted_x))) * shape_strength_y
     return format_result(x_comp, y_comp)
 
 def parabola(x, y, w, h, shape_strength_x, shape_strength_y):
