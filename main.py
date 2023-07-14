@@ -12,6 +12,7 @@ import sys
 import random
 import util # file with helper functions
 import shape_funcs # for weighting directions in floodfill
+import argparse
 
 class Model(object):
     def __init__(self, *params):
@@ -167,23 +168,24 @@ def set_parameters():
     """
       
     # BEGIN USER PARAMETERS
-    user_params = sys.argv
-    if len(sys.argv) < 3 or sys.argv[2] == 'circle':
-        shape_func = shape_funcs.circle
-    elif sys.argv[2] == 'fractal':
-        shape_func = shape_funcs.uniform
-    elif sys.argv[2] == 'cosine':
-        shape_func = shape_funcs.cosine
-    elif sys.argv[2] == 'heart':
-        shape_func = shape_funcs.heart
-    else:
-        raise ValueError("Not a supported shape")    
+    parser = argparse.ArgumentParser()
     try:
-        result_size = int(sys.argv[1]) if len(sys.argv) >= 2 else 500
-        palette_files = ['gradient3.jpg'] if len(sys.argv) < 4 else sys.argv[3].split(',')
-        train_region_size = 2 if len(sys.argv) < 5 else int(sys.argv[4])    
+        parser.add_argument('--shape', '-s', help="Desired shape to draw. Supported options are circle, fractal, cosine right now", type=str, default= 'circle')
+        parser.add_argument('--training_files', '-f', help="comma separated list of filenames in ./gradients folder", type=str, default='gradient3.jpg')
+        parser.add_argument('--train_region_size', '-t', help="how many neighboring pixels to use in training", type=int, default=2)
+        parser.add_argument('--result_size', '-r', help="width and height of output", type=int, default=500)       
+        parser.add_argument('--viz_vector_field', '-v', help="visualize the vector field of the chosen shape", action='store_true', default=False)    
+        args = parser.parse_args()
+        result_size = args.result_size
+        train_region_size = args.train_region_size
+        palette_files = args.training_files.split(',')
+        shape_func = (shape_funcs.circle if args.shape == 'circle' else
+                    shape_funcs.uniform if args.shape == 'fractal' else
+                    shape_funcs.cosine if args.shape == 'cosine' else
+                    1/0)
     except:
-        raise ValueError("Error with command line args. Usage: python main.py [result_size] [shape] [comma separated training files in a \"gradient\" folder] [training_region_size]")
+        print("Invalid command line args, exiting")
+        exit()
     # END USER PARAMETERS
 
     # BEGIN NON-USER PARAMETERS
@@ -199,11 +201,14 @@ def set_parameters():
     palette_paths = util.get_input_paths(palette_short_dir, palette_files)
     # END NON-USER PARAMETERS
 
+    if args.viz_vector_field:
+        shape_funcs.visualize_vector_field(shape_func, width, height, 
+                                           shape_strength_x, shape_strength_y)    
+
     params = (train_region_size, train_region_func, train_palette_size,
             gen_region_size, gen_pixel_limit, shape_strength_x, shape_strength_y, 
             shape_func, palette_paths, output_dims, palette_files, 
             palette_short_dir)
-
     return params
 
 def main():
@@ -212,15 +217,11 @@ def main():
      gen_pixel_limit, shape_strength_x, shape_strength_y, shape_func, palette_paths, 
      output_dims, palette_files, palette_short_dir) = params
     
-    #shape_funcs.visualize_shape_func(shape_func, output_dims[0], output_dims[1], 
-    #                                 shape_strength_x, shape_strength_y) 
-
-    # initialize canvas
-    root = Tk()
+    # initialize canvas    
+    root = Tk()  
     (width, height) = output_dims
     canvas = Canvas(root, width = width, height = height)
     canvas.pack()
-
     model = Model(*params)
     print("Training model...")
     model.train_palette()

@@ -8,6 +8,8 @@
 # Required python files: None
 
 import math
+import matplotlib
+matplotlib.use("TkAgg") # without this, matplotlib and Tk conflict
 import matplotlib.pyplot as plt
 
 def uniform(x,y,width,height, shape_strength_x, shape_strength_y):
@@ -50,7 +52,7 @@ def format_result(x_comp, y_comp, num_wts = 4, default_wt = 1):
         result[1] = abs(y_comp)
     return result
 
-def visualize_shape_func(shape_func, w, h, shape_strength_x, shape_strength_y):
+def visualize_vector_field(shape_func, w, h, shape_strength_x, shape_strength_y):
     # for now, ignore sign
     vector_field_x = [[None] * w for _ in range(h)]
     vector_field_y = [[None] * w for _ in range(h)]   
@@ -68,11 +70,6 @@ def visualize_shape_func(shape_func, w, h, shape_strength_x, shape_strength_y):
     ax2.set_title('y component')          
     plt.show()
 
-def cosine(x, y, w, h, shape_strength_x, shape_strength_y):
-    y_comp = -math.sin(x) * shape_strength_y # dy/dx
-    x_comp = (1 - abs(math.sin(x))) * shape_strength_x
-    return format_result(x_comp, y_comp)
-
 def normalize(x_comp, y_comp, shape_strength_x, shape_strength_y):
     if x_comp == y_comp == 0: (x_comp, y_comp) = (1, 1)
     magnitude = math.sqrt(x_comp**2 + y_comp**2)
@@ -81,6 +78,13 @@ def normalize(x_comp, y_comp, shape_strength_x, shape_strength_y):
     x_comp *= shape_strength_x
     y_comp *= shape_strength_y
     return (x_comp, y_comp)
+
+def cosine(x, y, w, h, shape_strength_x, shape_strength_y):
+    period = w
+    adjusted_x = 2 * math.pi * x / period
+    y_comp = -math.sin(adjusted_x) * shape_strength_y
+    x_comp = -math.sin(adjusted_x + math.pi*period/4) * shape_strength_y
+    return format_result(x_comp, y_comp)
 
 def parabola(x, y, w, h, shape_strength_x, shape_strength_y):
     x = x - w/2 # adjust so that x = 0 is the center. y doesn't matter
