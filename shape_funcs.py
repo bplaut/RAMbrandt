@@ -49,6 +49,11 @@ def format_result(x_comp, y_comp, num_wts = 4, default_wt = 1):
         result[1] = abs(y_comp)
     return result
 
+def cosine(x, y, w, h, shape_strength_x, shape_strength_y):
+    y_comp = -math.sin(x) * shape_strength_y # dy/dx
+    x_comp = (1 - abs(math.sin(x))) * shape_strength_x
+    return format_result(x_comp, y_comp)
+
 def normalize(x_comp, y_comp, shape_strength_x, shape_strength_y):
     if x_comp == y_comp == 0: (x_comp, y_comp) = (1, 1)
     magnitude = math.sqrt(x_comp**2 + y_comp**2)

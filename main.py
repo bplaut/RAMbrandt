@@ -172,8 +172,8 @@ def set_parameters():
         shape_func = shape_funcs.circle
     elif sys.argv[2] == 'fractal':
         shape_func = shape_funcs.uniform
-    elif sys.argv[2] == 'fermat':
-        shape_func = shape_funcs.fermat_spiral
+    elif sys.argv[2] == 'cosine':
+        shape_func = shape_funcs.cosine
     elif sys.argv[2] == 'heart':
         shape_func = shape_funcs.heart
     else:
