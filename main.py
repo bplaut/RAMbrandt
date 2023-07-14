@@ -182,6 +182,7 @@ def set_parameters():
         shape_func = (shape_funcs.circle if args.shape == 'circle' else
                     shape_funcs.uniform if args.shape == 'fractal' else
                     shape_funcs.cosine if args.shape == 'cosine' else
+                    shape_funcs.heart if args.shape == 'heart' else
                     1/0)
     except:
         print("Invalid command line args, exiting")
