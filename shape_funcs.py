@@ -80,7 +80,7 @@ def normalize(x_comp, y_comp, shape_strength_x, shape_strength_y):
     return (x_comp, y_comp)
 
 def cosine(x, y, w, h, shape_strength_x, shape_strength_y):
-    period = w
+    period = w / 2
     adjusted_x = 2 * math.pi * x / period
     y_comp = -math.sin(adjusted_x) * shape_strength_y
     x_comp = (1 - abs(math.sin(adjusted_x))) * shape_strength_y
