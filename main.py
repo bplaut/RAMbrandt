@@ -211,6 +211,9 @@ def main():
     (train_region_size, train_region_func, train_palette_size, gen_region_size,
      gen_pixel_limit, shape_strength_x, shape_strength_y, shape_func, palette_paths, 
      output_dims, palette_files, palette_short_dir) = params
+    
+    #shape_funcs.visualize_shape_func(shape_func, output_dims[0], output_dims[1], 
+    #                                 shape_strength_x, shape_strength_y) 
 
     # initialize canvas
     root = Tk()

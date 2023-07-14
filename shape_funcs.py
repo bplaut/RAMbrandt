@@ -8,6 +8,7 @@
 # Required python files: None
 
 import math
+import matplotlib.pyplot as plt
 
 def uniform(x,y,width,height, shape_strength_x, shape_strength_y):
     return format_result(1,1)
@@ -48,6 +49,24 @@ def format_result(x_comp, y_comp, num_wts = 4, default_wt = 1):
     else:
         result[1] = abs(y_comp)
     return result
+
+def visualize_shape_func(shape_func, w, h, shape_strength_x, shape_strength_y):
+    # for now, ignore sign
+    vector_field_x = [[None] * w for _ in range(h)]
+    vector_field_y = [[None] * w for _ in range(h)]   
+    for x in range(w):
+        for y in range(h):
+            wts = shape_func(x, y, w, h, shape_strength_x, shape_strength_y)
+            # order of wts is: increase x, increase y, decrease y, decrease x            
+            vector_field_x[y][x] = max(wts[0], wts[3])
+            vector_field_y[y][x] = max(wts[1], wts[2])
+    fig, (ax1, ax2) = plt.subplots(1,2)
+    fig.suptitle('Vector field for chosen shape')
+    ax1.imshow(vector_field_x, cmap='gray')
+    ax1.set_title('x component')
+    ax2.imshow(vector_field_y, cmap='gray')   
+    ax2.set_title('y component')          
+    plt.show()
 
 def cosine(x, y, w, h, shape_strength_x, shape_strength_y):
     y_comp = -math.sin(x) * shape_strength_y # dy/dx
