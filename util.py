@@ -147,6 +147,9 @@ def get_input_paths(image_short_dir, filenames):
             image_paths.append(os.path.join(image_dir, filename))
         else:
             print("Could not find file \'%s\', skipping" % filename)
+    if len(image_paths) == 0:
+        print("No valid input paths, check filenames. Exiting")
+        exit()
     return image_paths
 
 def make_output_name(shape_func, train_region_size, gen_region_size, 
