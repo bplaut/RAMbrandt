@@ -185,6 +185,7 @@ def set_parameters():
                     shape_funcs.cosine if args.shape == 'cosine' else
                     shape_funcs.heart if args.shape == 'heart' else
                     shape_funcs.outward if args.shape == 'outward' else
+                    shape_funcs.squiggles if args.shape == 'squiggles' else
                     1/0)
         shape_strength_x = args.shape_strength
         shape_strength_y = args.shape_strength        

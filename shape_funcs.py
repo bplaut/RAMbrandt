@@ -141,6 +141,14 @@ def heart(x, y, w, h, shape_strength_x, shape_strength_y):
     if (x > w/2 and y > h/2) or (x < w/2 and y < h/2): y_comp *= -1
     return format_result(x_comp, y_comp)
 
+def squiggles(x, y, w, h, shape_strength_x, shape_strength_y):
+    # based on this: https://www.geogebra.org/m/cXgNb58T
+    adjusted_x = 4 * x / w - 2 # normalize so x is in [-2, 2] instead of [0, w]
+    adjusted_y = 4 * y / h - 2 # normalize so y is in [-2, 2] instead of [0, h]
+    x_comp = shape_strength_x * math.sin(adjusted_x + adjusted_y)
+    y_comp = shape_strength_y * math.cos(adjusted_x - adjusted_y)
+    return format_result(x_comp, y_comp)
+
 def outward(x, y, w, h, shape_strength_x, shape_strength_y):
     x_comp = shape_strength_x * (x - w/2) / (w/2) # max abs value of shape_strength_x
     y_comp = shape_strength_y * (h/2 - y) / (h/2) # max abs value of shape_strength_y
