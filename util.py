@@ -150,12 +150,12 @@ def get_input_paths(image_short_dir, filenames):
     return image_paths
 
 def make_output_name(shape_func, train_region_size, gen_region_size, 
-                     train_palette_size, palette_files):
+                     train_palette_size, palette_files, shape_strength):
     palette_files_no_extn = [fname[:fname.find('.')] for fname in palette_files]
     palette_files_string = '_'.join(palette_files_no_extn)
-    return ('output/%s_train_size=%d_gen_region_size=%d_train_pal_size=%d_palette_files=%s.jpg' %
+    return ('output/%s_train_size=%d_gen_region_size=%d_shape_strength=%d_train_pal_size=%d_palette_files=%s.jpg' %
             (get_func_string(shape_func), train_region_size, gen_region_size, 
-             train_palette_size, palette_files_string))
+             shape_strength, train_palette_size, palette_files_string))
 
 def get_all_pixels(width, height):
     result = []

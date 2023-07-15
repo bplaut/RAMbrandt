@@ -175,6 +175,7 @@ def set_parameters():
         parser.add_argument('--train_region_size', '-t', help="how many neighboring pixels to use in training", type=int, default=2)
         parser.add_argument('--result_size', '-r', help="width and height of output", type=int, default=500)       
         parser.add_argument('--viz_vector_field', '-v', help="visualize the vector field of the chosen shape", action='store_true', default=False)    
+        parser.add_argument('--shape_strength', '-g', help='how aggressively to pursue the shape. Value of 1 means that we mostly ignore the shape. Default is 100.', type=int, default=100)        
         args = parser.parse_args()
         result_size = args.result_size
         train_region_size = args.train_region_size
@@ -184,6 +185,8 @@ def set_parameters():
                     shape_funcs.cosine if args.shape == 'cosine' else
                     shape_funcs.heart if args.shape == 'heart' else
                     1/0)
+        shape_strength_x = args.shape_strength
+        shape_strength_y = args.shape_strength        
     except:
         print("Invalid command line args, exiting")
         exit()
@@ -196,8 +199,6 @@ def set_parameters():
     output_dims = (width, height)
     gen_region_size = train_region_size
     gen_pixel_limit = width * height
-    shape_strength_x = 100 # value of 1 corresponds to not really pursuing the shape at all
-    shape_strength_y = 100 # same here
     palette_short_dir = 'input/gradients'
     palette_paths = util.get_input_paths(palette_short_dir, palette_files)
     # END NON-USER PARAMETERS
@@ -230,7 +231,7 @@ def main():
     image = model.generate()
     output_name = util.make_output_name(
         shape_func, train_region_size, gen_region_size, 
-        train_palette_size, palette_files)
+        train_palette_size, palette_files, shape_strength_x)
     print("Saving output to %s..." % output_name)    
     image.save(output_name)
     tk_image = ImageTk.PhotoImage(image)
