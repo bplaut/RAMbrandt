@@ -70,6 +70,7 @@ def visualize_vector_field(shape_func, w, h, shape_strength_x, shape_strength_y)
     ax2.set_title('y component')          
     plt.show()
 
+
 def normalize(x_comp, y_comp, shape_strength_x, shape_strength_y):
     if x_comp == y_comp == 0: (x_comp, y_comp) = (1, 1)
     magnitude = math.sqrt(x_comp**2 + y_comp**2)
@@ -82,8 +83,13 @@ def normalize(x_comp, y_comp, shape_strength_x, shape_strength_y):
 def cosine(x, y, w, h, shape_strength_x, shape_strength_y):
     period = w / 2
     adjusted_x = 2 * math.pi * x / period
-    y_comp = -math.sin(adjusted_x) * shape_strength_y
-    x_comp = (1 - abs(math.sin(adjusted_x))) * shape_strength_y
+    slope = -math.sin(adjusted_x) # dy/dx
+    # Let's normalize by having x_comp = 1/slope. Intuition: when dy/dx=1, we should have x_comp = y_comp
+    if abs(slope) < 0.0001:
+        x_comp = shape_strength_x
+    else:
+        x_comp = abs(1 / slope) * shape_strength_x
+    y_comp = slope * shape_strength_y
     return format_result(x_comp, y_comp)
 
 def parabola(x, y, w, h, shape_strength_x, shape_strength_y):
