@@ -170,7 +170,7 @@ def set_parameters():
     # BEGIN USER PARAMETERS
     parser = argparse.ArgumentParser()
     try:
-        parser.add_argument('--shape', '-s', help="Desired shape to draw. Supported options are circle, fractal, cosine right now", type=str, default= 'circle')
+        parser.add_argument('--shape', '-s', help="Desired shape to draw. Currently supported options are circle, fractal, cosine, outward", type=str, default= 'circle')
         parser.add_argument('--training_files', '-f', help="comma separated list of filenames in ./gradients folder", type=str, default='gradient3.jpg')
         parser.add_argument('--train_region_size', '-t', help="how many neighboring pixels to use in training", type=int, default=2)
         parser.add_argument('--result_size', '-r', help="width and height of output", type=int, default=500)       
@@ -184,6 +184,7 @@ def set_parameters():
                     shape_funcs.uniform if args.shape == 'fractal' else
                     shape_funcs.cosine if args.shape == 'cosine' else
                     shape_funcs.heart if args.shape == 'heart' else
+                    shape_funcs.outward if args.shape == 'outward' else
                     1/0)
         shape_strength_x = args.shape_strength
         shape_strength_y = args.shape_strength        

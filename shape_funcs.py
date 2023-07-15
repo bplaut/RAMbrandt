@@ -70,7 +70,6 @@ def visualize_vector_field(shape_func, w, h, shape_strength_x, shape_strength_y)
     ax2.set_title('y component')          
     plt.show()
 
-
 def normalize(x_comp, y_comp, shape_strength_x, shape_strength_y):
     if x_comp == y_comp == 0: (x_comp, y_comp) = (1, 1)
     magnitude = math.sqrt(x_comp**2 + y_comp**2)
@@ -140,6 +139,11 @@ def heart(x, y, w, h, shape_strength_x, shape_strength_y):
     # now normalize
     (x_comp, y_comp) = normalize(x_comp, y_comp, shape_strength_x, shape_strength_y)
     if (x > w/2 and y > h/2) or (x < w/2 and y < h/2): y_comp *= -1
+    return format_result(x_comp, y_comp)
+
+def outward(x, y, w, h, shape_strength_x, shape_strength_y):
+    x_comp = shape_strength_x * (x - w/2) / (w/2) # max abs value of shape_strength_x
+    y_comp = shape_strength_y * (h/2 - y) / (h/2) # max abs value of shape_strength_y
     return format_result(x_comp, y_comp)
 
 def horiz(x,y,h,shape_strength_x, shape_strength_y):
